@@ -47,7 +47,11 @@ class _WebViewExampleState extends State<WebViewExample> {
         NavigationDelegate(
             onNavigationRequest: (NavigationRequest request) {
               debugPrint('allowing navigation to ${request.url}');
-
+              if (request.url.substring(0, 6) == 'intent') {
+                String questionBankUrl = request.url.substring(169, 268);
+                _launchUrl(questionBankUrl);
+                return NavigationDecision.prevent;
+              }
               return NavigationDecision.navigate;
             },
             onProgress: (int progress) {
