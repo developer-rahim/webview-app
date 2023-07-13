@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
@@ -18,13 +19,25 @@ class WebViewExample extends StatefulWidget {
 }
 
 class _WebViewExampleState extends State<WebViewExample> {
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
+  late bool isLogged = false;
+
   late final WebViewController _controller;
   bool isExitApp = false;
+  Future<void> getLoggedValue() async {
+    final SharedPreferences prefs = await _prefs;
+    isLogged = prefs.getBool('isLogged') ?? false;
+    setState(() {
+      prefs.setBool('isLogged', isLogged).then((bool success) {
+        return isLogged;
+      });
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-
     // #docregion platform_features
     late final PlatformWebViewControllerCreationParams params;
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
@@ -41,7 +54,7 @@ class _WebViewExampleState extends State<WebViewExample> {
 
     // #enddocregion platform_features
 
-    controller
+    getLoggedValue().then((value) => controller
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -58,12 +71,18 @@ class _WebViewExampleState extends State<WebViewExample> {
               const CircularProgressIndicator();
             },
             onWebResourceError: (WebResourceError error) {},
-            onUrlChange: (UrlChange change) {
+            onUrlChange: (UrlChange change) async {
               if (change.url == 'https://www.p2a.academy/') {
                 setState(() {
                   isExitApp = true;
                 });
-                print(isExitApp);
+                final SharedPreferences prefs = await _prefs;
+
+                setState(() {
+                  prefs.setBool('isLogged', true).then(
+                        (value) => isLogged,
+                      );
+                });
               } else {
                 isExitApp = false;
 
@@ -91,9 +110,11 @@ class _WebViewExampleState extends State<WebViewExample> {
       )
       ..loadRequest(
         Uri.parse(
-          'https://www.p2a.academy/auth/login',
+          isLogged == true
+              ? 'https://www.p2a.academy/'
+              : 'https://www.p2a.academy/auth/login',
         ),
-      );
+      ));
 
     // #enddocregion platform_features
 
@@ -128,4 +149,3 @@ class _WebViewExampleState extends State<WebViewExample> {
     }
   }
 }
-//https://englishapps.nextlms.net/api/bkash/callback?paymentID=TR0011E81685871958882&status=success&apiVersion=1.2.0-beta
