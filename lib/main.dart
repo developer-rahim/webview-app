@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
-void main() => runApp(
-      const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: WebViewExample(),
-      ),
-    );
+void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: WebViewExample(),
+    ),
+  );
+}
 
 class WebViewExample extends StatefulWidget {
   const WebViewExample({super.key});
@@ -35,8 +40,15 @@ class _WebViewExampleState extends State<WebViewExample> {
     });
   }
 
+  void initialization() async {
+    await Future.delayed(const Duration(seconds: 4));
+
+    FlutterNativeSplash.remove();
+  }
+
   @override
   void initState() {
+    initialization();
     super.initState();
     // #docregion platform_features
     late final PlatformWebViewControllerCreationParams params;
