@@ -43,6 +43,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   webview_flutter_wkwebview: ^3.6.3
+  shared_preferences: ^2.2.0
+  flutter_native_splash: ^2.2.0+1
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +66,12 @@ flutter_icons:
   android: "launcher_icon"
   ios: false
   image_path: "assets/images/logo.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/images/splash_logo.png
+  branding: assets/images/bandign_logo.png
+ 
 
 # The following section is specific to Flutter packages.
 flutter:

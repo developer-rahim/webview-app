@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
-// #enddocregion platform_imports
 
-void main() => runApp(
-      const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: WebViewExample(),
-      ),
-    );
+void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: WebViewExample(),
+    ),
+  );
+}
 
 class WebViewExample extends StatefulWidget {
   const WebViewExample({super.key});
@@ -19,13 +24,32 @@ class WebViewExample extends StatefulWidget {
 }
 
 class _WebViewExampleState extends State<WebViewExample> {
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
+  late bool isLogged = false;
+
   late final WebViewController _controller;
   bool isExitApp = false;
+  Future<void> getLoggedValue() async {
+    final SharedPreferences prefs = await _prefs;
+    isLogged = prefs.getBool('isLogged') ?? false;
+    setState(() {
+      prefs.setBool('isLogged', isLogged).then((bool success) {
+        return isLogged;
+      });
+    });
+  }
+
+  void initialization() async {
+    await Future.delayed(const Duration(seconds: 4));
+
+    FlutterNativeSplash.remove();
+  }
 
   @override
   void initState() {
+    initialization();
     super.initState();
-
     // #docregion platform_features
     late final PlatformWebViewControllerCreationParams params;
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
@@ -42,25 +66,35 @@ class _WebViewExampleState extends State<WebViewExample> {
 
     // #enddocregion platform_features
 
-    controller
+    getLoggedValue().then((value) => controller
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
             onNavigationRequest: (NavigationRequest request) {
               debugPrint('allowing navigation to ${request.url}');
-
+              if (request.url.substring(0, 6) == 'intent') {
+                String questionBankUrl = request.url.substring(169, 268);
+                _launchUrl(questionBankUrl);
+                return NavigationDecision.prevent;
+              }
               return NavigationDecision.navigate;
             },
             onProgress: (int progress) {
               const CircularProgressIndicator();
             },
             onWebResourceError: (WebResourceError error) {},
-            onUrlChange: (UrlChange change) {
+            onUrlChange: (UrlChange change) async {
               if (change.url == 'https://www.p2a.academy/') {
                 setState(() {
                   isExitApp = true;
                 });
-                print(isExitApp);
+                final SharedPreferences prefs = await _prefs;
+
+                setState(() {
+                  prefs.setBool('isLogged', true).then(
+                        (value) => isLogged,
+                      );
+                });
               } else {
                 isExitApp = false;
 
@@ -88,9 +122,11 @@ class _WebViewExampleState extends State<WebViewExample> {
       )
       ..loadRequest(
         Uri.parse(
-          'https://www.p2a.academy/auth/login',
+          isLogged == true
+              ? 'https://www.p2a.academy/'
+              : 'https://www.p2a.academy/auth/login',
         ),
-      );
+      ));
 
     // #enddocregion platform_features
 
@@ -125,4 +161,3 @@ class _WebViewExampleState extends State<WebViewExample> {
     }
   }
 }
-//https://englishapps.nextlms.net/api/bkash/callback?paymentID=TR0011E81685871958882&status=success&apiVersion=1.2.0-beta
